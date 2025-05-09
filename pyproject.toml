@@ -11,7 +11,6 @@ dependencies = [
     "matplotlib>=3.10.3",
     "mcp[cli]>=1.6.0",
     "numpy>=2.2.5",
-    "opencv-python>=4.11.0.86",
     "pillow>=11.2.1",
     "pycocotools>=2.0.8",
     "scipy>=1.15.2",
@@ -27,7 +26,7 @@ dependencies = [
 dev = ["ruff>=0.7.3", "pytest>=8.0.0"]
 
 [project.scripts]
-mcp-vision = "mcp_vision:main"
+mcp-vision = "src:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -35,3 +34,7 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 dev-dependencies = ["ruff>=0.7.3", "pytest>=8.0.0"]
+
+[tool.uv.sources]
+groundingdino = [{ path = "./src/groundingdino", editable = true }]
+mcp_vision = [{ path = "./src/mcp_vision", editable = true }]

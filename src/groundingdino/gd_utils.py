@@ -15,9 +15,9 @@ import groundingdino.datasets.transforms as T
 
 
 # Checkpoint and config
-config_file = "groundingdino/config/GroundingDINO_SwinT_OGC.py"
+config_file = "src/groundingdino/config/GroundingDINO_SwinT_OGC.py"
 ckpt_repo_id = "ShilongLiu/GroundingDINO"
-ckpt_filenmae = "groundingdino_swint_ogc.pth"
+ckpt_filename = "groundingdino_swint_ogc.pth"
 
 
 def load_model_hf(model_config_path, repo_id, filename, device='cpu'):
@@ -48,7 +48,7 @@ def image_transform_grounding_for_vis(init_image):
     image, _ = transform(init_image, None) # 3, h, w
     return image
 
-model = load_model_hf(config_file, ckpt_repo_id, ckpt_filenmae)
+model = load_model_hf(config_file, ckpt_repo_id, ckpt_filename)
 
 def run_grounding_dino(
         input_image: Image.Image,
@@ -59,7 +59,11 @@ def run_grounding_dino(
     image = input_image.convert("RGB")
     _, image_tensor = image_transform_grounding(image)
 
-    boxes, logits, labels = predict(model, image_tensor, caption, box_threshold, text_threahold)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    boxes, logits, labels = predict(
+        model, image_tensor, caption, box_threshold, text_threahold, device=device
+    )
 
     return {
         "boxes": boxes,

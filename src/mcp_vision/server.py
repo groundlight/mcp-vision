@@ -1,8 +1,12 @@
 import time
 from typing import Any
+import base64
+from io import BytesIO
+import requests
 
 from mcp.server.fastmcp import FastMCP
-from transformers import pipeline, PretrainedConfig
+from PIL import Image
+from groundingdino.gd_utils import run_grounding_dino, crop_image
 
 
 DEFAULT_OBJDET_MODEL = "google/owlvit-base-patch32"
@@ -12,6 +16,18 @@ models = {}
 
 
 mcp = FastMCP("mcp-vision")
+
+
+def pil_to_base64(image: Image.Image) -> str:
+    buffered = BytesIO()
+    image.save(buffered, format="JPEG")
+    img_str = base64.b64encode(buffered.getvalue())
+    return img_str
+
+
+def base64_to_pil(data_base64: str) -> Image.Image:
+    image = Image.open(BytesIO(base64.b64decode(data_base64)))
+    return image
 
 
 def load_hf_objdet_pipeline(model_name: str, device: str = "cpu"):
@@ -42,15 +58,7 @@ def locate_object_bboxes(image_path: str, candidate_labels: list[str]) -> list[d
         return None
 
 
-@mcp.tool()
-def locate_objects(image_path: str, candidate_labels: list[str], hf_model: str | None = None) -> str:
-    """Detect, find and/or locate objects in the image found at image_path.
-
-    Args:
-        image_path: path to the image
-        candidate_labels: list of candidate object labels as strings
-        hf_model (optional): huggingface zero-shot object detection model (default = "google/owlvit-base-patch32")
-    """
+def init_objdet_pipeline(hf_model: str | None = None) -> None:
     global models
 
     if hf_model is None:
@@ -70,9 +78,88 @@ def locate_objects(image_path: str, candidate_labels: list[str], hf_model: str |
         objdet_config = load_hf_objdet_pipeline(model_name=hf_model)
         models["object_detection"] = objdet_config
 
+
+@mcp.tool()
+def locate_objects(image_path: str, candidate_labels: list[str], hf_model: str | None = None) -> str:
+    """Detect, find and/or locate objects in the image found at image_path.
+
+    Args:
+        image_path: path to the image
+        candidate_labels: list of candidate object labels as strings
+        hf_model (optional): huggingface zero-shot object detection model (default = "google/owlvit-base-patch32")
+    """
+    init_objdet_pipeline(hf_model)
+
     bboxes = locate_object_bboxes(image_path, candidate_labels=candidate_labels)
     if not bboxes or len(bboxes) == 0:
         return f"No objects were located in the image."
 
     return f"{len(bboxes)} objects were found in the image at the following locations: {bboxes}."
 
+
+# TODO: await requests result and make this async
+# @mcp.tool()
+# def zoom_to_object(image_path: str, label: str, hf_model: str | None = None) -> Any:
+#     """Zoom into an object in the image, allowing you to analyze it more closely. Crop image to the object bounding box and return the cropped image. 
+#     If many objects are present in the image, will return the 'best' one as represented by object score. 
+
+#     Args:
+#         image_path: path to the imamge
+#         label: object label to find and crop to
+#         hf_model (optional): huggingface zero-shot object detection model (default = "google/owlvit-base-pathch32")
+#     """
+#     init_objdet_pipeline(hf_model)
+
+#     bboxes = locate_object_bboxes(image_path, candidate_labels=[label])
+#     if not bboxes or len(bboxes) == 0:
+#         return None
+    
+#     bboxes = sorted(bboxes, key=lambda x: x["score"], reverse=True) # this may be superfluous as hf models return in this order already
+#     if not bboxes or len(bboxes) == 0:
+#         return None
+    
+#     best_box = bboxes[0]
+#     left, top, right, bottom = best_box["box"].values()
+
+#     # image = Image.open(image_path)
+#     image = Image.open(requests.get(image_path, stream=True).raw)
+
+#     crop = image.crop((left, top, right, bottom))
+
+#     crop_base64 = pil_to_base64(crop)
+#     if len(crop_base64) > 500 * 1024:
+#         print(f"Crop is too large, max allowed 500KB, got {len(crop_base64)}")
+#         return None
+
+#     return crop_base64
+
+
+@mcp.tool()
+def zoom_to_object(image_path: str, label: str) -> Any:
+    """Zoom into an object in the image, allowing you to analyze it more closely. Crop image to the object bounding box and return the cropped image. 
+    If many objects are present in the image, will return the 'best' one as represented by object score. 
+
+    Args:
+        image_path: path to the imamge
+        label: object label to find and crop to
+    """
+    if image_path.startswith("http"):
+        image = Image.open(requests.get(image_path, stream=True).raw)
+    else:
+        image = Image.open(image_path)
+
+    box_threshold = 0.25
+    text_threshold = 0.25
+
+    output_dict = run_grounding_dino(image, label, box_threshold, text_threshold)
+
+    print(output_dict)
+
+    crop = crop_image(image, output_dict["boxes"][0])
+
+    crop_base64 = pil_to_base64(crop)
+    if len(crop_base64) > 500 * 1024:
+        print(f"Crop is too large, max allowed 500KB, got {len(crop_base64)}")
+        return None
+
+    return crop_base64

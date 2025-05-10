@@ -3,10 +3,14 @@ from typing import Any
 import base64
 from io import BytesIO
 import requests
+import logging
+import sys
 
 from mcp.server.fastmcp import FastMCP
 from PIL import Image
 from groundingdino.gd_utils import run_grounding_dino, crop_image
+
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_OBJDET_MODEL = "google/owlvit-base-patch32"
@@ -163,3 +167,15 @@ def zoom_to_object(image_path: str, label: str) -> Any:
         return None
 
     return crop_base64
+
+
+def main():
+    try:
+        mcp.run(transport="stdio")
+    except Exception as e:
+        logger.error(f"Error starting server: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

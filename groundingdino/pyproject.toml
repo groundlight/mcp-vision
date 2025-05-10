@@ -1,0 +1,25 @@
+[project]
+name = "groundingdino"
+version = "0.1.1"
+description = "Modified from Grounding DINO Demo by merve "
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "addict>=2.4.0",
+    "matplotlib>=3.10.3",
+    "mcp[cli]>=1.6.0",
+    "numpy>=2.2.5",
+    "pillow>=11.2.1",
+    "pycocotools>=2.0.8",
+    "scipy>=1.15.2",
+    "supervision==0.3.2",
+    "timm>=1.0.15",
+    "torch>=2.7.0",
+    "torchvision>=0.22.0",
+    "transformers>=4.51.3",
+    "yapf>=0.43.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -15,7 +15,8 @@ import groundingdino.datasets.transforms as T
 
 
 # Checkpoint and config
-config_file = "src/groundingdino/config/GroundingDINO_SwinT_OGC.py"
+parent_path = Path(__file__).parent
+config_file = str(parent_path / "config/GroundingDINO_SwinT_OGC.py")
 ckpt_repo_id = "ShilongLiu/GroundingDINO"
 ckpt_filename = "groundingdino_swint_ogc.pth"
 

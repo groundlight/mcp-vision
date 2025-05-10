@@ -20,13 +20,14 @@ dependencies = [
     "torchvision>=0.22.0",
     "transformers>=4.51.3",
     "yapf>=0.43.0",
+    "groundingdino",
 ]
 
 [project.optional-dependencies]
 dev = ["ruff>=0.7.3", "pytest>=8.0.0"]
 
 [project.scripts]
-mcp-vision = "src:main"
+mcp-vision = "mcp_vision:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -36,5 +37,5 @@ build-backend = "hatchling.build"
 dev-dependencies = ["ruff>=0.7.3", "pytest>=8.0.0"]
 
 [tool.uv.sources]
-groundingdino = [{ path = "./src/groundingdino", editable = true }]
-mcp_vision = [{ path = "./src/mcp_vision", editable = true }]
+groundingdino = [{ path = "./groundingdino", editable = true }]
+
